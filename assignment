@@ -1,0 +1,62 @@
+
+
+import pandas as pd
+
+
+def main():
+    print("VIDEO GAME CATALOG MANAGER")
+
+    # Read the original CSV (it is never modified)
+    games = pd.read_csv("video_games_raw.csv")
+
+    # Make sure Price and Rating are numeric (handles values like "$39.99")
+    games["Price"] = pd.to_numeric(
+        games["Price"].astype(str).str.replace("$", "", regex=False),
+        errors="coerce",
+    )
+    games["Rating"] = pd.to_numeric(games["Rating"], errors="coerce")
+
+    # Ask for a row number and validate it
+    while True:
+        try:
+            row_number = int(input("Enter a row number to inspect: "))
+            if 0 <= row_number < len(games):
+                break
+            print(f"Please enter a number between 0 and {len(games) - 1}.")
+        except ValueError:
+            print("Please enter a valid whole number.")
+
+    # .iloc to access row
+    game = games.iloc[row_number]
+    print("\nSelected Game:")
+    print(f"Title: {game['Title']}")
+    print(f"Platform: {game['Platform']}")
+    print(f"Genre: {game['Genre']}")
+    print(f"Rating: {game['Rating']}")
+    print(f"Current Status: {game['Status']}")
+
+    # Ask for a new status
+    print("\nEnter a new status:")
+    new_status = input().strip()
+
+    # .at[] - change one specific value
+    # (.at uses the index label; the default index matches the row position)
+    games.at[games.index[row_number], "Status"] = new_status
+
+    # Add the Recommended column
+    # Default everything to "No", then use .loc[] to set qualifying rows to "Yes"
+    games["Recommended"] = "No"
+    games.loc[(games["Rating"] >= 8) & (games["Price"] <= 40), "Recommended"] = "Yes"
+
+    # filter the recommended games
+    recommended = games.query("Recommended == 'Yes'")
+    print("\nRecommended Games:")
+    print(recommended[["Title", "Platform", "Price", "Rating"]])
+
+    # save to a NEW file
+    games.to_csv("video_games_cleaned.csv", index=False)
+    print("\nThe catalog has been updated.")
+    print("Saved as video_games_cleaned.csv.")
+
+
+main()
